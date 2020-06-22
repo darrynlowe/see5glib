@@ -22035,9 +22035,9 @@ var onEmscriptenLoaded = function() {
 var createEmscriptenModule = function() {
   if (!_emscriptenStartedLoading) {
 		var script = document.createElement("script");
-		//script.src = _baseUrl + _appName;
+		script.src = _baseUrl + _appName;
 		//script.src = "js/eeGeoWebGL.js";
-		script.src = "https://cdn.jsdelivr.net/gh/darrynlowe/see5glib/eeGeoWebGL.js";
+		//script.src = "https://cdn.jsdelivr.net/gh/darrynlowe/see5glib/eeGeoWebGL.js";
     	script.onload = onEmscriptenLoaded;
 		document.body.appendChild(script);
 		_emscriptenStartedLoading = true;
