@@ -20268,7 +20268,7 @@ var Heatmap = (L.Layer ? L.Layer : L.Class).extend({
             var weight = 1.0;
             var latLng = [];
             if (dataCoordProperty in pointDatum) {
-                latLng = L.latLng(pointDatum[dataCoordProperty]);
+                latLng = pointDatum[dataCoordProperty];
 
                 if (dataWeightProperty in pointDatum) {
                     weight = pointDatum[dataWeightProperty];
@@ -22036,8 +22036,8 @@ var createEmscriptenModule = function() {
   if (!_emscriptenStartedLoading) {
 		var script = document.createElement("script");
 		//script.src = _baseUrl + _appName;
-		//script.src = "eeGeoWebGL.js";
-		script.src = "https://cdn.jsdelivr.net/gh/darrynlowe/see5glib@master/eeGeoWebGL.js";
+		//script.src = "js/eeGeoWebGL.js";
+		script.src = "https://cdn.jsdelivr.net/gh/darrynlowe/see5glib/eeGeoWebGL.js";
     	script.onload = onEmscriptenLoaded;
 		document.body.appendChild(script);
 		_emscriptenStartedLoading = true;
