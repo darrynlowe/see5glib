@@ -13211,26 +13211,26 @@ function BuildingsModuleImpl(emscriptenApi) {
         return _emscriptenApi.buildingsApi.findIntersectionWithBuilding(ray);
     };
 
-    /*** DL HACK ***/
-    this.screenPointToRay = function(screenPoint) {
-        if (!_ready) {
-            return undefined;
-        }
+	/*** DL HACK ***/
+	this.screenPointToRay = function(screenPoint) {
+		if (!_ready) {
+			return undefined;
+		}
 
-        var ray = _emscriptenApi.spacesApi.screenPointToRay(screenPoint);
-        return ray;
-    };
+		var ray = _emscriptenApi.spacesApi.screenPointToRay(screenPoint);
+		return ray;
+	};
 
-    this.latLongToVerticallyDownRay = function(latLong) {
-        if (!_ready) {
-            return undefined;
-        }
+	this.latLongToVerticallyDownRay = function(latLong) {
+		if (!_ready) {
+			return undefined;
+		}
 
-        var ray = _emscriptenApi.spacesApi.latLongToVerticallyDownRay(latLong);
-        return ray;
-    };
-    /*** DL HACK END ***/
-
+		var ray = _emscriptenApi.spacesApi.latLongToVerticallyDownRay(latLong);
+		return ray;
+	};
+	/*** DL HACK END ***/
+	
     this.findBuildingAtScreenPoint = function(screenPoint) {
         if (!_ready) {
             return undefined;
@@ -13292,20 +13292,28 @@ function BuildingsModule(emscriptenApi) {
         _this.fire("buildinginformationreceived", {buildingHighlight: buildingHighlight});
     };
 
-    /*** DL HACK ***/
-    this.screenPointToRay = function(screenPoint) {
-	return _buildingsModuleImpl.screenPointToRay(screenPoint);
-    };
-
-    this.latLongToVerticallyDownRay = function(latLong) {
-	return _buildingsModuleImpl.latLongToVerticallyDownRay(latLong);
-    };
-
-    this.findIntersectionWithBuilding = function(ray) {
-        return _buildingsModuleImpl.findIntersectionWithBuilding(ray);
-    };
-    /*** DL HACK END ***/
-
+	/*** DL HACK ***/
+	this.screenPointToRay = function(screenPoint) {
+		return _buildingsModuleImpl.screenPointToRay(screenPoint);
+		};
+	
+		this.latLongToVerticallyDownRay = function(latLong) {
+		return _buildingsModuleImpl.latLongToVerticallyDownRay(latLong);
+		};
+	
+		this.tryGetBuildingInformation = function(buildingHighlightId) {
+			return _buildingsModuleImpl.tryGetBuildingInformation(buildingHighlightId);
+		};
+	
+		this.createBuildingHighlight  = function(buildingHighlight) {
+			return _buildingsModuleImpl.createBuildingHighlight (buildingHighlight);
+		};
+	
+		this.findIntersectionWithBuilding = function(ray) {
+			return _buildingsModuleImpl.findIntersectionWithBuilding(ray);
+		};
+		/*** DL HACK END ***/
+			
     this.findBuildingAtScreenPoint = function(screenPoint) {
         return _buildingsModuleImpl.findBuildingAtScreenPoint(screenPoint);
     };
@@ -13596,7 +13604,8 @@ var EegeoMapController = function (mapId, emscriptenApi, domElement, apiKey, bro
         idleSecondsBeforeFrameRateThrottle: 30.0,
 
         drawClearColor: "#000000ff",
-        indoorMapBackgroundColor: "#000000c0"
+        indoorMapBackgroundColor: "#000000c0",
+        indoorSelectionTimeoutDuration: 30.0
     };
 
     options = L.extend(_defaultOptions, options);
@@ -13660,6 +13669,7 @@ var EegeoMapController = function (mapId, emscriptenApi, domElement, apiKey, bro
     var trafficEnabled = (options.trafficEnabled) ? "1" : "0";
     var trafficDisableWhenEnteringIndoorMaps = (options.trafficDisableWhenEnteringIndoorMaps) ? "1" : "0";
     var indoorLabelsAlwaysHidden = (options.indoorLabelsAlwaysHidden) ? "1" : "0";
+    var indoorSelectionTimeoutDuration = options.indoorSelectionTimeoutDuration;
 
     _Module["arguments"] = [
         _canvasId,
@@ -13678,7 +13688,8 @@ var EegeoMapController = function (mapId, emscriptenApi, domElement, apiKey, bro
         _containerId,
         trafficEnabled,
         trafficDisableWhenEnteringIndoorMaps,
-        indoorLabelsAlwaysHidden
+        indoorLabelsAlwaysHidden,
+        indoorSelectionTimeoutDuration.toString()
     ];
 
     this.leafletMap = new EegeoLeafletMap(
@@ -14388,6 +14399,7 @@ function EmscriptenFrameRateApi(emscriptenApiPointer, cwrap, emscriptenModule, e
 module.exports = EmscriptenFrameRateApi;
 },{}],14:[function(require,module,exports){
 var elevationMode = require("../elevation_mode.js");
+var interopUtils = require("./emscripten_interop_utils.js");
 
 function EmscriptenGeofenceApi(eegeoApiPointer, cwrap, emscriptenModule) {
 
@@ -14460,12 +14472,13 @@ function EmscriptenGeofenceApi(eegeoApiPointer, cwrap, emscriptenModule) {
     };
 
     this.setGeofenceColor = function(polygonId, color) {
-        _setGeofenceColor(_eegeoApiPointer, polygonId, color.x/255, color.y/255, color.z/255, color.w/255);
+        var colorVec4 = interopUtils.colorToVec4(color);
+        _setGeofenceColor(_eegeoApiPointer, polygonId, colorVec4.x/255, colorVec4.y/255, colorVec4.z/255, colorVec4.w/255);
     };
 }
 
 module.exports = EmscriptenGeofenceApi;
-},{"../elevation_mode.js":7}],15:[function(require,module,exports){
+},{"../elevation_mode.js":7,"./emscripten_interop_utils.js":20}],15:[function(require,module,exports){
 var elevationMode = require("../elevation_mode.js");
 var heatmap = require("../../public/heatmap.js");
 var interopUtils = require("./emscripten_interop_utils.js");
@@ -14521,19 +14534,19 @@ function EmscriptenHeatmapApi(emscriptenApiPointer, cwrap, emscriptenModule, ems
     function _buildFlatData(pointData) {
         var dataFlat = [];
         //pointData.forEach(function(pointDatum) {
+		//DL HACK
 		Object.entries(pointData).forEach(([k,pointDatum]) => {
-			if (pointDatum.weight > 0) {
+			if (pointDatum.weight > 0) {	
 				dataFlat.push(pointDatum.latLng.lat);
 				dataFlat.push(pointDatum.latLng.lng);
 				var altOrDefault = 0.0;
-				//DL HACK
 				if (pointDatum.latLng.alt !== undefined) {
-				    altOrDefault = pointDatum.latLng.alt;
+					altOrDefault = pointDatum.latLng.alt;
 				}
 				dataFlat.push(altOrDefault);
 				dataFlat.push(pointDatum.weight);
 			}
-        });
+		});
 
         return dataFlat;
     }
@@ -14812,13 +14825,13 @@ function EmscriptenHeatmapApi(emscriptenApiPointer, cwrap, emscriptenModule, ems
 
 module.exports = EmscriptenHeatmapApi;
 
-},{"../../public/heatmap.js":65,"../elevation_mode.js":7,"./emscripten_interop_utils.js":20}],16:[function(require,module,exports){
+},{"../../public/heatmap.js":66,"../elevation_mode.js":7,"./emscripten_interop_utils.js":20}],16:[function(require,module,exports){
 function EmscriptenIndoorEntityApi(emscriptenApiPointer, cwrap, emscriptenModule, emscriptenMemory) {
 
     var _emscriptenApiPointer = emscriptenApiPointer;
     var _emscriptenMemory = emscriptenMemory;
     var _indoorEntityApi_SetIndoorEntityPickedCallback = cwrap("indoorEntityApi_SetIndoorEntityPickedCallback", null, ["number", "number"]);
-    var _indoorEntityApi_SetHighlights = cwrap("indoorEntityApi_SetHighlights", null, ["number", "string", "number", "number", "number"]);
+    var _indoorEntityApi_SetHighlightsWithBorderThickness = cwrap("indoorEntityApi_SetHighlightsWithBorderThickness", null, ["number", "string", "number", "number", "number", "number"]);
     var _indoorEntityApi_ClearHighlights = cwrap("indoorEntityApi_ClearHighlights", null, ["number", "string", "number", "number"]);
     var _indoorEntityApi_ClearAllHighlights = cwrap("indoorEntityApi_ClearAllHighlights", null, ["number"]);
     
@@ -14832,10 +14845,10 @@ function EmscriptenIndoorEntityApi(emscriptenApiPointer, cwrap, emscriptenModule
         }
     };
 
-    var _setHighlights = function(ids, color, indoorMapId) {
+    var _setHighlights = function(ids, color, indoorMapId, borderThickness) {
         _emscriptenMemory.passStrings(ids, function(resultStrings, stringArraySize){
             _emscriptenMemory.passDoubles(color, function(doubleArray, arraySize) {
-                _indoorEntityApi_SetHighlights(_emscriptenApiPointer, indoorMapId, resultStrings, stringArraySize, doubleArray);
+                _indoorEntityApi_SetHighlightsWithBorderThickness(_emscriptenApiPointer, indoorMapId, resultStrings, stringArraySize, doubleArray, borderThickness);
             });
         });
     };
@@ -14860,7 +14873,7 @@ function EmscriptenIndoorEntityApi(emscriptenApiPointer, cwrap, emscriptenModule
         _indoorEntityPickedCallback = callback;
     };
 
-    this.setHighlights = function(ids, color, indoorMapId) {
+    this.setHighlights = function(ids, color, indoorMapId, borderThickness) {
         if (indoorMapId === null || indoorMapId === undefined) {
             return;
         }
@@ -14868,7 +14881,7 @@ function EmscriptenIndoorEntityApi(emscriptenApiPointer, cwrap, emscriptenModule
         if (typeof ids === "string") {
             ids = [ids];
         }
-        _setHighlights(ids, color, indoorMapId);
+        _setHighlights(ids, color, indoorMapId, borderThickness);
     };
     
     this.clearHighlights = function(ids, indoorMapId) {
@@ -15071,7 +15084,7 @@ function EmscriptenIndoorMapEntityInformationApi(emscriptenApiPointer, cwrap, em
 }
 
 module.exports = EmscriptenIndoorMapEntityInformationApi;
-},{"../../public/indoorMapEntities/indoorMapEntities":66}],18:[function(require,module,exports){
+},{"../../public/indoorMapEntities/indoorMapEntities":67}],18:[function(require,module,exports){
 var IndoorMapFloorOutlinePolygon = require("../../public/indoorMapFloorOutlines/indoor_map_floor_outline_polygon");
 var IndoorMapFloorOutlinePolygonRing = require("../../public/indoorMapFloorOutlines/indoor_map_floor_outline_polygon_ring");
 
@@ -15215,7 +15228,7 @@ function EmscriptenIndoorMapFloorOutlineInformationApi(emscriptenApiPointer, cwr
 
 module.exports = EmscriptenIndoorMapFloorOutlineInformationApi;
 
-},{"../../public/indoorMapFloorOutlines/indoor_map_floor_outline_polygon":71,"../../public/indoorMapFloorOutlines/indoor_map_floor_outline_polygon_ring":72}],19:[function(require,module,exports){
+},{"../../public/indoorMapFloorOutlines/indoor_map_floor_outline_polygon":72,"../../public/indoorMapFloorOutlines/indoor_map_floor_outline_polygon_ring":73}],19:[function(require,module,exports){
 var interopUtils = require("./emscripten_interop_utils.js");
 
 function EmscriptenIndoorsApi(emscriptenApiPointer, cwrap, emscriptenModule, emscriptenMemory) {
@@ -15506,6 +15519,16 @@ function vec4ToRgba32(v) {
     return rgba;
 }
 
+function rgba32ToVec4(rgba) {
+    var vec4 = new space.Vector4(
+        ((rgba >> 24) & 0xFF),
+        ((rgba >> 16) & 0xFF),
+        ((rgba >> 8) & 0xFF),
+        (rgba & 0xFF)
+    );
+    return vec4;
+}
+
 function hexToRgba32(hex) {
     // https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
 
@@ -15558,31 +15581,31 @@ function colorObjectToVector4(color) {
     var b = undefined;
     var a = 255.0;
     if (typeof color === "object") {
-        if (color.hasOwnProperty("r")) {
+        if ("r" in color) {
             r = color.r;
         }
-        else if (color.hasOwnProperty("x")) {
+        else if ("x" in color) {
             r = color.x;
         }
 
-        if (color.hasOwnProperty("g")) {
+        if ("g" in color) {
             g = color.g;
         }
-        else if (color.hasOwnProperty("y")) {
+        else if ("y" in color) {
             g = color.y;
         }
 
-        if (color.hasOwnProperty("b")) {
+        if ("b" in color) {
             b = color.b;
         }
-        else if (color.hasOwnProperty("z")) {
+        else if ("z" in color) {
             b = color.z;
         }
 
-        if (color.hasOwnProperty("a")) {
+        if ("a" in color) {
             a = color.a;
         }
-        else if (color.hasOwnProperty("w")) {
+        else if ("w" in color) {
             a = color.w;
         }
     }
@@ -15610,12 +15633,16 @@ function colorToRgba32(color) {
     throw new Error("Unable to parse color: " + String(color));
 }
 
+function colorToVec4(color) {
+    return rgba32ToVec4(colorToRgba32(color));
+}
+
 module.exports = {
     colorToRgba32: colorToRgba32,
-    hexToRgba32: hexToRgba32
+    colorToVec4: colorToVec4
 };
 
-},{"../../public/space":83}],21:[function(require,module,exports){
+},{"../../public/space":84}],21:[function(require,module,exports){
 function EmscriptenLayerPointMappingApi(emscriptenApiPointer, cwrap, emscriptenModule, emscriptenMemory) {
 
     var _emscriptenApiPointer = emscriptenApiPointer;
@@ -15999,6 +16026,7 @@ module.exports = EmscriptenPrecacheApi;
 
 },{}],26:[function(require,module,exports){
 var elevationMode = require("../elevation_mode.js");
+var indoorMapEntitySetProp = require("../../public/entity_set_prop.js");
 
 function EmscriptenPropsApi(emscriptenApiPointer, cwrap, emscriptenModule, emscriptenMemory) {
 
@@ -16017,8 +16045,18 @@ function EmscriptenPropsApi(emscriptenApiPointer, cwrap, emscriptenModule, emscr
     var _propsApi_setHeadingDegrees = null;
     var _propsApi_setAutomaticIndoorMapPopulationEnabled = null;
     var _propsApi_isAutomaticIndoorMapPopulationEnabled = null;
+    var _propsApi_getIndoorMapPropCount = null;
+    var _propsApi_tryGetIndoorMapPropDataBufferSizes = null;
+    var _propsApi_tryGetIndoorMapPropData = null;
     var _propsApi_setIndoorMapPopulationServiceUrl = null;
+    var _propsApi_setIndoorMapEntitySetPropsLoadedCallback = null;
     var _propsApi_setIndoorMapPopulationRequestCompletedCallback = null;
+
+    var _indoorMapEntitySetPropsLoadedCallback = null;
+
+    this.onInitialized = function() {
+        this.registerIndoorMapEntitySetPropsLoadedHandler(indoorMapEntitySetPropsLoadedHandler);
+    };
 
     this.createProp = function(indoorMapId, floorId, name, latitude, longitude, elevation, elevationModeString, headingDegrees, geometryId) {
         _propsApi_createProp = _propsApi_createProp || cwrap("propsApi_createProp", "number", ["number", "string", "number", "string", "number", "number", "number", "number", "number", "string"]);
@@ -16140,9 +16178,114 @@ function EmscriptenPropsApi(emscriptenApiPointer, cwrap, emscriptenModule, emscr
         return _propsApi_isAutomaticIndoorMapPopulationEnabled(_emscriptenApiPointer);
     };
 
+    this.tryGetIndoorMapEntitySetProps = function(indoorMapId, floorId) {
+        _propsApi_getIndoorMapPropCount = _propsApi_getIndoorMapPropCount || cwrap("propsApi_getIndoorMapPropCount", "number", ["number", "string", "number"]);
+        var propCount = _propsApi_getIndoorMapPropCount(_emscriptenApiPointer, indoorMapId, floorId);
+
+        var indoorMapPerPropNameSizesBuf = _emscriptenMemory.createInt32Buffer(propCount);
+        var indoorMapPerPropModelSizesBuf = _emscriptenMemory.createInt32Buffer(propCount);
+        var indoorMapPropBufferSizesBuf = _emscriptenMemory.createInt32Buffer(2);
+
+        _propsApi_tryGetIndoorMapPropDataBufferSizes = _propsApi_tryGetIndoorMapPropDataBufferSizes || cwrap("propsApi_tryGetIndoorMapPropDataBufferSizes", "number", ["number", "string", "number", "number", "number", "number", "number"]);
+
+        var success = _propsApi_tryGetIndoorMapPropDataBufferSizes(
+                        _emscriptenApiPointer,
+                        indoorMapId, 
+                        floorId,
+                        propCount,
+                        indoorMapPerPropNameSizesBuf.ptr,
+                        indoorMapPerPropModelSizesBuf.ptr,
+                        indoorMapPropBufferSizesBuf.ptr);
+
+        if (!success) {
+            return null;
+        }
+
+        var indoorMapPerPropNameSizes = _emscriptenMemory.consumeBufferToArray(indoorMapPerPropNameSizesBuf);
+        var indoorMapPerPropModelSizes = _emscriptenMemory.consumeBufferToArray(indoorMapPerPropModelSizesBuf);
+        var indoorMapPropBufferSizes = _emscriptenMemory.consumeBufferToArray(indoorMapPropBufferSizesBuf);
+
+        var indoorMapPropNameTotalSize = indoorMapPropBufferSizes[0];
+        var indoorMapPropModelTotalSize = indoorMapPropBufferSizes[1];
+
+        var indoorMapPropStringNamesBuf = _emscriptenMemory.createInt8Buffer(indoorMapPropNameTotalSize);
+        var indoorMapPropStringModelsBuf = _emscriptenMemory.createInt8Buffer(indoorMapPropModelTotalSize);
+        var indoorMapPropLatLngBuf = _emscriptenMemory.createDoubleBuffer(propCount * 2);
+        var indoorMapPropHeightBuf = _emscriptenMemory.createDoubleBuffer(propCount);
+        var indoorMapPropOrientationBuf = _emscriptenMemory.createDoubleBuffer(propCount);
+
+        _propsApi_tryGetIndoorMapPropData = _propsApi_tryGetIndoorMapPropData || cwrap("propsApi_tryGetIndoorMapPropData", "number", ["number", "string", "number", "number", "number", "number", "number", "number", "number"]);
+
+        success = _propsApi_tryGetIndoorMapPropData(
+            _emscriptenApiPointer,
+            indoorMapId, 
+            floorId,
+            propCount,
+            indoorMapPropStringNamesBuf.ptr,
+            indoorMapPropStringModelsBuf.ptr,
+            indoorMapPropLatLngBuf.ptr,
+            indoorMapPropHeightBuf.ptr,
+            indoorMapPropOrientationBuf.ptr
+        );
+
+        if (!success) {
+            return null;
+        }
+
+        var indoorMapPropStringNames = _emscriptenMemory.consumeUtf8BufferToString(indoorMapPropStringNamesBuf);
+        var indoorMapPropStringModels = _emscriptenMemory.consumeUtf8BufferToString(indoorMapPropStringModelsBuf);
+        var indoorMapPropLatLngs = _emscriptenMemory.consumeBufferToArray(indoorMapPropLatLngBuf);
+        var indoorMapPropHeights = _emscriptenMemory.consumeBufferToArray(indoorMapPropHeightBuf);
+        var indoorMapPropOrientation = _emscriptenMemory.consumeBufferToArray(indoorMapPropOrientationBuf);
+
+        var indoorMapEntityPropList = [];
+
+        var nameBufferHead = 0;
+        var modelBufferHead = 0;
+        for (var i = 0; i < propCount; i++) {
+            var numCharsInName = indoorMapPerPropNameSizes[i];
+            var nameBufferEnd = nameBufferHead + numCharsInName;
+            var name = indoorMapPropStringNames.slice(nameBufferHead, nameBufferEnd);
+            nameBufferHead = nameBufferEnd;
+
+            var numCharsInModel = indoorMapPerPropModelSizes[i];
+            var modelBufferEnd = modelBufferHead + numCharsInModel;
+            var model = indoorMapPropStringModels.slice(modelBufferHead, modelBufferEnd);
+            modelBufferHead = modelBufferEnd;
+
+            var posLat = indoorMapPropLatLngs[2*i];
+            var posLng = indoorMapPropLatLngs[2*i + 1];
+            var position = L.latLng(posLat, posLng);
+
+            var height = indoorMapPropHeights[i];
+            var orientation = indoorMapPropOrientation[i];
+
+            var prop = new indoorMapEntitySetProp.IndoorMapEntitySetProp(indoorMapId, floorId, name, model, position, height, elevationMode.ElevationModeType.HEIGHT_ABOVE_GROUND, orientation);
+            indoorMapEntityPropList.push(prop);
+        }
+
+        return indoorMapEntityPropList;
+    };
+
     this.setIndoorMapPopulationServiceUrl = function(serviceUrl) {
         _propsApi_setIndoorMapPopulationServiceUrl = _propsApi_setIndoorMapPopulationServiceUrl || cwrap("propsApi_setIndoorMapPopulationServiceUrl", null, ["number", "string"]);
         _propsApi_setIndoorMapPopulationServiceUrl(_emscriptenApiPointer, serviceUrl);
+    };
+
+    var indoorMapEntitySetPropsLoadedHandler = function(indoorMapIdPtr, floorId) {
+        if (_indoorMapEntitySetPropsLoadedCallback !== null) {
+            var indoorMapId = _emscriptenMemory.stringifyPointer(indoorMapIdPtr);
+            _indoorMapEntitySetPropsLoadedCallback(indoorMapId, floorId);
+        }
+    };
+
+    this.setIndoorMapEntitySetPropsLoadedCallback = function(callback) {
+        _indoorMapEntitySetPropsLoadedCallback = callback;
+    };
+
+    this.registerIndoorMapEntitySetPropsLoadedHandler = function(callback) {
+        _propsApi_setIndoorMapEntitySetPropsLoadedCallback = _propsApi_setIndoorMapEntitySetPropsLoadedCallback || cwrap("propsApi_setIndoorMapEntitySetPropsLoadedCallback", null, ["number", "number"]);
+        _propsApi_setIndoorMapEntitySetPropsLoadedCallback(_emscriptenApiPointer, emscriptenModule.addFunction(callback));
     };
 
     this.setIndoorMapPopulationRequestCompletedCallback = function(callback) {
@@ -16152,7 +16295,7 @@ function EmscriptenPropsApi(emscriptenApiPointer, cwrap, emscriptenModule, emscr
 }
 
 module.exports = EmscriptenPropsApi;
-},{"../elevation_mode.js":7}],27:[function(require,module,exports){
+},{"../../public/entity_set_prop.js":65,"../elevation_mode.js":7}],27:[function(require,module,exports){
 var space = require("../../public/space");
 var interopUtils = require("./emscripten_interop_utils.js");
 
@@ -16175,7 +16318,7 @@ function EmscriptenRenderingApi(emscriptenApiPointer, cwrap, emscriptenModule, e
     };
 
     this.setClearColor = function(clearColor) {
-        var clearColorRGBA32 = interopUtils.hexToRgba32(clearColor);
+        var clearColorRGBA32 = interopUtils.colorToRgba32(clearColor);
         _renderingApi_SetClearColor(_emscriptenApiPointer, clearColorRGBA32);
     };
 
@@ -16244,7 +16387,7 @@ function EmscriptenRenderingApi(emscriptenApiPointer, cwrap, emscriptenModule, e
 }
 
 module.exports = EmscriptenRenderingApi;
-},{"../../public/space":83,"./emscripten_interop_utils.js":20}],28:[function(require,module,exports){
+},{"../../public/space":84,"./emscripten_interop_utils.js":20}],28:[function(require,module,exports){
 var space = require("../../public/space");
 
 function EmscriptenSpacesApi(eegeoApiPointer, cwrap, emscriptenModule, emscriptenMemory) {
@@ -16379,6 +16522,7 @@ function EmscriptenSpacesApi(eegeoApiPointer, cwrap, emscriptenModule, emscripte
     };
 
     this.getAltitudeAtLatLng = function(latLng) {
+        latLng = L.latLng(latLng);
         return _getAltitudeAtLatLng(latLng.lat, latLng.lng);
     };
 
@@ -16427,7 +16571,7 @@ function EmscriptenSpacesApi(eegeoApiPointer, cwrap, emscriptenModule, emscripte
 }
 
 module.exports = EmscriptenSpacesApi;
-},{"../../public/space":83}],29:[function(require,module,exports){
+},{"../../public/space":84}],29:[function(require,module,exports){
 function EmscriptenThemesApi(eegeoApiPointer, cwrap, emscriptenModule) {
 
     var _eegeoApiPointer = eegeoApiPointer;
@@ -16981,7 +17125,7 @@ var IndoorEntranceMarkerUpdater = function(map, indoorsModule) {
 };
 
 module.exports = IndoorEntranceMarkerUpdater;
-},{"../public/marker":77}],37:[function(require,module,exports){
+},{"../public/marker":78}],37:[function(require,module,exports){
 var MapModule = require("./map_module");
 
 function IndoorMapEntityInformationModuleImpl(emscriptenApi) {
@@ -17530,7 +17674,8 @@ var IndoorsModule = function(emscriptenApi, mapController, mapId, indoorId, floo
             _pendingEnterTransition = config;
             return;
         }
-        _emscriptenApi.cameraApi.setView({ location: config.latLng, distance: config.distance, allowInterruption: false, headingDegrees: config.orientation });
+        var animated = "animate" in config ? config["animate"] : true;
+        _emscriptenApi.cameraApi.setView({ location: config.latLng, distance: config.distance, allowInterruption: false, headingDegrees: config.orientation, animate: animated });
         _mapController._setIndoorTransitionCompleteEventListener(function() { _enterIndoorMap(config.indoorMapId); });
 
         _this.once("indoormapenter", function() {
@@ -17689,21 +17834,24 @@ var IndoorsModule = function(emscriptenApi, mapController, mapId, indoorId, floo
         }
 
         if (latLng === null) {
-            return false;
+            if (!_ready) {
+                return false;
+            }
+
+            _enterIndoorMap(indoorMapId);
+            return true;
         }
 
         var distance = 400;
 
-        if (!config) {
-            config = {
-                latLng: latLng,
-                distance: distance,
-                indoorMapId: indoorMapId,
-                orientation: 0
-            };
-        }
+        var defaultConfig = {
+            latLng: latLng,
+            distance: distance,
+            indoorMapId: indoorMapId,
+            orientation: 0
+        };
 
-        _transitionToIndoorMap(config);
+        _transitionToIndoorMap(Object.assign(defaultConfig, config));
 
         return true;
     };
@@ -17776,11 +17924,12 @@ var IndoorsModule = function(emscriptenApi, mapController, mapId, indoorId, floo
         return this;
     };
 
-    this.setEntityHighlights = function(ids, color, indoorMapId) {
+    this.setEntityHighlights = function(ids, highlightColor, indoorMapId, highlightBorderThickness) {
         if (!_ready) return;
 
         indoorMapId = _indoorMapIdOrDefault(indoorMapId);
-        _emscriptenApi.indoorEntityApi.setHighlights(ids, color, indoorMapId);
+        highlightBorderThickness = _borderThicknessOrDefault(highlightBorderThickness);
+        _emscriptenApi.indoorEntityApi.setHighlights(ids, highlightColor, indoorMapId, highlightBorderThickness);
     };
 
     this.clearEntityHighlights = function(ids, indoorMapId) {
@@ -17788,6 +17937,14 @@ var IndoorsModule = function(emscriptenApi, mapController, mapId, indoorId, floo
 
         indoorMapId = _indoorMapIdOrDefault(indoorMapId);
         _emscriptenApi.indoorEntityApi.clearHighlights(ids, indoorMapId);
+    };
+
+    var _borderThicknessOrDefault = function(borderThickness) {
+        if (borderThickness === undefined || borderThickness === null) {
+            borderThickness = 0.5;
+        }
+
+        return borderThickness;
     };
 
     var _indoorMapIdOrDefault = function(indoorMapId) {
@@ -17815,7 +17972,7 @@ IndoorsModule.prototype = IndoorsPrototype;
 
 module.exports = IndoorsModule;
 
-},{"../public/indoors/indoors":76,"./indoor_watermark_controller":40,"./map_module":43}],42:[function(require,module,exports){
+},{"../public/indoors/indoors":77,"./indoor_watermark_controller":40,"./map_module":43}],42:[function(require,module,exports){
 var MapModule = require("./map_module");
 var indoorOptions = require("./indoor_map_layer_options.js");
 var elevationMode = require("./elevation_mode.js");
@@ -18607,7 +18764,7 @@ PrecacheModule.prototype = MapModule;
 
 module.exports = PrecacheModule;
 
-},{"../public/precaching/precache_operation_result":81,"./id_to_object_map":35,"./map_module":43}],51:[function(require,module,exports){
+},{"../public/precaching/precache_operation_result":82,"./id_to_object_map":35,"./map_module":43}],51:[function(require,module,exports){
 var MapModule = require("./map_module");
 var IdToObjectMap = require("./id_to_object_map");
 
@@ -18675,6 +18832,10 @@ var PropModule = function(emscriptenApi) {
         }
         _createAndAddArray(_pendingProps);
         _pendingProps = [];
+    };
+
+    var _executeIndoorMapEntitySetPropsLoadedCallbacks = function(indoorMapId, floorId) {
+        _this.fire("indoormapentitysetpropsloaded", {indoorMapId: indoorMapId, floorId: floorId});
     };
 
     var _executeIndoorMapPopulationRequestCompletedCallbacks = function(succeeded, httpStatusCode) {
@@ -18757,7 +18918,9 @@ var PropModule = function(emscriptenApi) {
             this.setIndoorMapPopulationServiceUrl(_pendingServiceUrl);
         }
 
+        _emscriptenApi.propsApi.setIndoorMapEntitySetPropsLoadedCallback(_executeIndoorMapEntitySetPropsLoadedCallbacks);
         _emscriptenApi.propsApi.setIndoorMapPopulationRequestCompletedCallback(_executeIndoorMapPopulationRequestCompletedCallbacks);
+        _emscriptenApi.propsApi.onInitialized();
     };
 
     this.onUpdate = function(dt) {
@@ -18819,6 +18982,15 @@ var PropModule = function(emscriptenApi) {
         else {
             _pendingServiceUrl = serviceUrl;
             _hasPendingServiceUrl = true;
+        }
+    };
+
+    this.getIndoorMapEntitySetProps = function(indoorMapId, floorId) {
+        if (_ready) {
+            return _emscriptenApi.propsApi.tryGetIndoorMapEntitySetProps(indoorMapId, floorId);
+        }
+        else {
+            return null;
         }
     };
 };
@@ -19236,7 +19408,7 @@ var ThemesModule = function(emscriptenApi) {
 ThemesModule.prototype = MapModule;
 
 module.exports = ThemesModule;
-},{"../public/themes":84,"./map_module":43}],56:[function(require,module,exports){
+},{"../public/themes":85,"./map_module":43}],56:[function(require,module,exports){
 var MapModule = require("./map_module");
 
 function VersionModule(emscriptenApi) {
@@ -19407,7 +19579,7 @@ module.exports = {
 };
 
 
-},{"../space":83}],60:[function(require,module,exports){
+},{"../space":84}],60:[function(require,module,exports){
 var space = require("../space");
 
 var BuildingHighlightSelectionType = {
@@ -19480,7 +19652,7 @@ module.exports = {
 };
 
 
-},{"../space":83}],61:[function(require,module,exports){
+},{"../space":84}],61:[function(require,module,exports){
 var BuildingInformation = function(
     buildingId,
     buildingDimensions,
@@ -19783,7 +19955,7 @@ var EegeoLeafletMap = L.Map.extend({
         var id = L.stamp(layer);
 
         if (id in this._layersOnMap) {
-            return;
+            return this;
         }
 
         this._createPointMapping(layer);
@@ -19791,19 +19963,21 @@ var EegeoLeafletMap = L.Map.extend({
         this._layersOnMap[id] = layer;
 
         L.Map.prototype.addLayer.call(this, layer);
+        return this;
     },
 
     removeLayer: function(layer) {
         var id = L.stamp(layer);
 
         if(!(id in this._layersOnMap)) {
-            return;
+            return this;
         }
 
         this._removePointMapping(layer);
         L.Map.prototype.removeLayer.call(this, layer);
 
         delete this._layersOnMap[id];
+        return this;
     },
 
     onInitialized: function(emscriptenApi) {
@@ -19930,6 +20104,7 @@ var EegeoLeafletMap = L.Map.extend({
 
     setViewVerticallyLocked: function(isVerticallyLocked) {
         this._cameraModule.setVerticallyLocked(isVerticallyLocked);
+        return this;
     },
 
     fitBounds: function(bounds, options) {
@@ -20048,12 +20223,12 @@ var EegeoLeafletMap = L.Map.extend({
     },
 
     setCameraTiltDegrees: function(tilt) {
-      this._cameraModule.setTiltDegrees(tilt);
-      return this;
+        this._cameraModule.setTiltDegrees(tilt);
+        return this;
     },
 
     getCameraTiltDegrees: function() {
-      return this._cameraModule.getTiltDegrees();
+        return this._cameraModule.getTiltDegrees();
     },
 
     getCameraHeadingDegrees: function() {
@@ -20061,24 +20236,25 @@ var EegeoLeafletMap = L.Map.extend({
     },
 
     setCameraHeadingDegrees: function(heading) {
-      this._cameraModule.setHeadingDegrees(heading);
-      return this;
+        this._cameraModule.setHeadingDegrees(heading);
+        return this;
     },
 
     getMaximumPrecacheRadius: function() {
-      return this._precacheModule.getMaximumPrecacheRadius();
+        return this._precacheModule.getMaximumPrecacheRadius();
     },
 
     precache: function(center, radius, completionCallback) {
-      return this.precacheWithDetailedResult(center, radius, function(precacheResult) { completionCallback(precacheResult.succeeded); });
+        return this.precacheWithDetailedResult(center, radius, function(precacheResult) { completionCallback(precacheResult.succeeded); });
     },
 
     precacheWithDetailedResult: function(center, radius, completionCallback) {
-      return this._precacheModule.precache(center, radius, completionCallback);
+        return this._precacheModule.precache(center, radius, completionCallback);
     },
 
     setMapCollapsed: function(isMapCollapsed) {
         this.rendering.setMapCollapsed(isMapCollapsed);
+        return this;
     },
 
     isMapCollapsed: function() {
@@ -20087,26 +20263,32 @@ var EegeoLeafletMap = L.Map.extend({
 
     setDrawClearColor: function(clearColor) {
         this.rendering.setClearColor(clearColor);
+        return this;
     },
 
     setTargetVSyncInterval: function(targetVSyncInterval) {
         this._frameRateModule.setTargetVSyncInterval(targetVSyncInterval);
+        return this;
     },
 
     setThrottledTargetFrameInterval: function(throttledTargetFrameIntervalMilliseconds) {
         this._frameRateModule.setThrottledTargetFrameInterval(throttledTargetFrameIntervalMilliseconds);
+        return this;
     },
 
     setIdleSecondsBeforeThrottle: function(idleSecondsBeforeThrottle) {
         this._frameRateModule.setIdleSecondsBeforeThrottle(idleSecondsBeforeThrottle);
+        return this;
     },
 
     setThrottleWhenIdleEnabled: function(throttleWhenIdleEnabled) {
         this._frameRateModule.setThrottleWhenIdleEnabled(throttleWhenIdleEnabled);
+        return this;
     },
 
     cancelFrameRateThrottle: function() {
         this._frameRateModule.cancelThrottle();
+        return this;
     },
 
     isHardwareAccelerationAvailable: function() {
@@ -20200,7 +20382,84 @@ var EegeoLeafletMap = L.Map.extend({
 
 module.exports = EegeoLeafletMap;
 
-},{"../private/indoor_map_layer_options.js":39,"../public/popup.js":80}],65:[function(require,module,exports){
+},{"../private/indoor_map_layer_options.js":39,"../public/popup.js":81}],65:[function(require,module,exports){
+var IndoorMapEntitySetProp = function(
+        indoorMapId,
+        floorId,
+        name,
+        geometryId,
+        location,
+        elevation,
+        elevationMode,
+        headingDegrees) 
+    {
+    
+    var _indoorMapId = indoorMapId;
+    var _floorId = floorId;
+    var _name = name;
+    var _geometryId = geometryId;
+    var _location = location;
+    var _elevation = elevation;
+    var _elevationMode = elevationMode;
+    var _headingDegrees = headingDegrees;
+    
+    this.getIndoorMapId = function() {
+        return _indoorMapId;
+    };
+    
+    this.getIndoorMapFloorId = function() {
+        return _floorId;
+    };
+    
+    this.getName = function() {
+        return _name;
+    };
+    
+    this.getGeometryId = function() {
+        return _geometryId;
+    };
+    
+    this.getLocation = function() {
+        return _location;
+    };
+    
+    this.getElevation = function() {
+        return _elevation;
+    };
+    
+    this.getElevationMode = function() {
+        return _elevationMode;
+    };
+    
+    this.getHeadingDegrees = function() {
+        return _headingDegrees;
+    };
+};
+
+var indoorMapEntitySetProp = function(indoorMapId,
+                                      floorId,
+                                      name,
+                                      geometryId,
+                                      location,
+                                      elevation,
+                                      elevationMode,
+                                      headingDegrees) {
+
+    return new IndoorMapEntitySetProp(indoorMapId,
+                                      floorId,
+                                      name,
+                                      geometryId,
+                                      location,
+                                      elevation,
+                                      elevationMode,
+                                      headingDegrees);
+};
+
+module.exports = {
+    IndoorMapEntitySetProp: IndoorMapEntitySetProp,
+    indoorMapEntitySetProp: indoorMapEntitySetProp
+};
+},{}],66:[function(require,module,exports){
 var elevationMode = require("../private/elevation_mode.js");
 
 var HeatmapOcclusionMapFeature = {
@@ -20268,7 +20527,7 @@ var Heatmap = (L.Layer ? L.Layer : L.Class).extend({
             var weight = 1.0;
             var latLng = [];
             if (dataCoordProperty in pointDatum) {
-                latLng = pointDatum[dataCoordProperty];
+                latLng = L.latLng(pointDatum[dataCoordProperty]);
 
                 if (dataWeightProperty in pointDatum) {
                     weight = pointDatum[dataWeightProperty];
@@ -20437,7 +20696,13 @@ var Heatmap = (L.Layer ? L.Layer : L.Class).extend({
         return colorGradient;
     },
 
-    initialize: function (pointData, options) {
+	// DL HACK START
+    //initialize: function (pointData, options) {
+    //    this.setOptions(options);
+    //    this._pointData = this._loadPointData(pointData);
+    //},
+
+	initialize: function (pointData, options) {
 		this.setOptions(options);
 		
         if (options.hasOwnProperty("linkData")) {
@@ -20449,7 +20714,8 @@ var Heatmap = (L.Layer ? L.Layer : L.Class).extend({
 				this._pointData = this._loadPointData(pointData);
 			}
 		}
-    },
+	},
+	// DL HACK END
 
     getData: function () {
         return this._pointData;
@@ -20459,8 +20725,9 @@ var Heatmap = (L.Layer ? L.Layer : L.Class).extend({
         this._pointData = this._loadPointData(pointData);
         this._changedFlags.data = true;
         return this;
-	},
-	
+    },
+
+
     getPolygonPoints: function () {
         return this.options.polygonPoints;
     },
@@ -20702,55 +20969,55 @@ var Heatmap = (L.Layer ? L.Layer : L.Class).extend({
         L.setOptions(this, options);
 
         // only call mutation method (which validates and sets dirty flag) if property exists in param
-        if (options.hasOwnProperty("indoorMapId") || options.hasOwnProperty("indooindoorMapFloorIdMapId")) {
+        if ("indoorMapId" in options || "indooindoorMapFloorIdMapId" in options) {
             this.setIndoorMapWithFloorId(this.options.indoorMapId, this.options.indoorMapFloorId);
         }
-        if (options.hasOwnProperty("elevation")) {
+        if ("elevation" in options) {
             this.setElevation(this.options.elevation);
         }
-        if (options.hasOwnProperty("elevationMode")) {
+        if ("elevationMode" in options) {
             this.setElevationMode(this.options.elevationMode);
         }
-        if (options.hasOwnProperty("densityBlend")) {
+        if ("densityBlend" in options) {
             this.setDensityBlend(this.options.densityBlend);
         }
-        if (options.hasOwnProperty("interpolateDensityByZoom")) {
+        if ("interpolateDensityByZoom" in options) {
             this.setInterpolateDensityByZoom(this.options.interpolateDensityByZoom);
         }
-        if (options.hasOwnProperty("zoomMin")) {
+        if ("zoomMin" in options) {
             this.setZoomMin(this.options.zoomMin);
         }
-        if (options.hasOwnProperty("zoomMax")) {
+        if ("zoomMax" in options) {
             this.setZoomMax(this.options.zoomMax);
         }
-        if (options.hasOwnProperty("intensityBias")) {
+        if ("intensityBias" in options) {
             this.setIntensityBias(this.options.intensityBias);
         }
-        if (options.hasOwnProperty("intensityScale")) {
+        if ("intensityScale" in options) {
             this.setIntensityScale(this.options.intensityScale);
         }
-        if (options.hasOwnProperty("opacity")) {
+        if ("opacity" in options) {
             this.setOpacity(this.options.opacity);
         }
-        if (options.hasOwnProperty("colorGradient")) {
+        if ("colorGradient" in options) {
             this.setColorGradient(this.options.colorGradient);
         }
-        if (options.hasOwnProperty("resolutionPixels")) {
+        if ("resolutionPixels" in options) {
             this.setResolution(this.options.resolutionPixels);
         }
-        if (options.hasOwnProperty("densityStops")) {
+        if ("densityStops" in options) {
             this.setDensityStops(this.options.densityStops);
         }
-        if (options.hasOwnProperty("useApproximation")) {
+        if ("useApproximation" in options) {
             this.setUseApproximation(this.options.useApproximation);
         }
-        if (options.hasOwnProperty("weightMin")) {
+        if ("weightMin" in options) {
             this.setWeightMin(this.options.weightMin);
         }
-        if (options.hasOwnProperty("weightMax")) {
+        if ("weightMax" in options) {
             this.setWeightMax(this.options.weightMax);
         }
-        if (options.hasOwnProperty("polygonPoints")) {
+        if ("polygonPoints" in options) {
             this.setPolygonPoints(this.options.polygonPoints);
         }
 
@@ -20816,7 +21083,8 @@ module.exports = {
     heatmap: heatmap,
     HeatmapOcclusionMapFeature: HeatmapOcclusionMapFeature
 };
-},{"../private/elevation_mode.js":7}],66:[function(require,module,exports){
+
+},{"../private/elevation_mode.js":7}],67:[function(require,module,exports){
 var _indoorMapEntityInformation = require("./indoor_map_entity_information");
 var _indoorMapEntity = require("./indoor_map_entity");
 
@@ -20825,7 +21093,7 @@ module.exports = {
     IndoorMapEntityInformation: _indoorMapEntityInformation.IndoorMapEntityInformation,
     indoorMapEntityInformation: _indoorMapEntityInformation.indoorMapEntityInformation
 };
-},{"./indoor_map_entity":67,"./indoor_map_entity_information":68}],67:[function(require,module,exports){
+},{"./indoor_map_entity":68,"./indoor_map_entity_information":69}],68:[function(require,module,exports){
 var IndoorMapEntity = function(indoorMapEntityId, indoorMapFloorId, position, outline) {
     var _indoorMapEntityId = indoorMapEntityId;
     var _indoorMapFloorId = indoorMapFloorId;
@@ -20851,7 +21119,7 @@ var IndoorMapEntity = function(indoorMapEntityId, indoorMapFloorId, position, ou
 };
 
 module.exports = IndoorMapEntity;
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 var IndoorMapEntityInformationLoadStateType = {
     NONE: "None",
     PARTIAL: "Partial",
@@ -20929,7 +21197,7 @@ module.exports = {
     IndoorMapEntityInformation: IndoorMapEntityInformation,
     indoorMapEntityInformation: indoorMapEntityInformation
 };
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 var _indoorMapFloorOutlineInformation = require("./indoor_map_floor_outline_information");
 var _indoorMapFloorOutlinePolygon = require("./indoor_map_floor_outline_polygon");
 var _indoorMapFloorOutlinePolygonRing = require("./indoor_map_floor_outline_polygon_ring");
@@ -20941,7 +21209,7 @@ module.exports = {
     indoorMapFloorOutlineInformation: _indoorMapFloorOutlineInformation.indoorMapFloorOutlineInformation
 };
 
-},{"./indoor_map_floor_outline_information":70,"./indoor_map_floor_outline_polygon":71,"./indoor_map_floor_outline_polygon_ring":72}],70:[function(require,module,exports){
+},{"./indoor_map_floor_outline_information":71,"./indoor_map_floor_outline_polygon":72,"./indoor_map_floor_outline_polygon_ring":73}],71:[function(require,module,exports){
 var IndoorMapFloorOutlineInformation = function(indoorMapId, indoorMapFloorId) {
 
   var _nativeId = null;
@@ -21007,7 +21275,7 @@ module.exports = {
   indoorMapFloorOutlineInformation: indoorMapFloorOutlineInformation
 };
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 var IndoorMapFloorOutlinePolygon = function(outerRing, innerRings) {
   var _outerRing = outerRing;
   var _innerRings = innerRings;
@@ -21024,7 +21292,7 @@ var IndoorMapFloorOutlinePolygon = function(outerRing, innerRings) {
 
 module.exports = IndoorMapFloorOutlinePolygon;
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 var IndoorMapFloorOutlinePolygonRing = function(latLngPoints) {
   var _latLngPoints = latLngPoints;
 
@@ -21036,7 +21304,7 @@ var IndoorMapFloorOutlinePolygonRing = function(latLngPoints) {
 
 module.exports = IndoorMapFloorOutlinePolygonRing;
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 var IndoorMap = function(indoorMapId, indoorMapName, indoorMapSourceVendor, floorCount, floors, searchTags, exitFunc) {
 
 	var _indoorMapId = indoorMapId;
@@ -21074,7 +21342,7 @@ var IndoorMap = function(indoorMapId, indoorMapName, indoorMapSourceVendor, floo
 };
 
 module.exports = IndoorMap;
-},{}],74:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 var IndoorMapEntrance = function(indoorMapId, indoorMapName, latLng) {
 
     var _indoorMapId = indoorMapId;
@@ -21095,7 +21363,7 @@ var IndoorMapEntrance = function(indoorMapId, indoorMapName, latLng) {
 };
 
 module.exports = IndoorMapEntrance;
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 var IndoorMapFloor = function(floorId, floorIndex, floorName, floorShortName) {
     var _floorId = floorId;
     var _floorIndex = floorIndex;
@@ -21127,7 +21395,7 @@ var IndoorMapFloor = function(floorId, floorIndex, floorName, floorShortName) {
 };
 
 module.exports = IndoorMapFloor;
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 var _indoorMap = require("./indoor_map");
 var _indoorMapEntrance = require("./indoor_map_entrance");
 var _indoorMapFloor = require("./indoor_map_floor");
@@ -21136,7 +21404,7 @@ module.exports = {
     IndoorMapEntrance: _indoorMapEntrance,
     IndoorMapFloor: _indoorMapFloor
 };
-},{"./indoor_map":73,"./indoor_map_entrance":74,"./indoor_map_floor":75}],77:[function(require,module,exports){
+},{"./indoor_map":74,"./indoor_map_entrance":75,"./indoor_map_floor":76}],78:[function(require,module,exports){
 var indoorOptions = require("../private/indoor_map_layer_options.js");
 var elevationMode = require("../private/elevation_mode.js");
 
@@ -21335,7 +21603,7 @@ module.exports = {
     Marker: Marker,
     marker: marker
 };
-},{"../private/eegeo_dom_util":5,"../private/elevation_mode.js":7,"../private/indoor_map_layer_options.js":39,"./popup":80}],78:[function(require,module,exports){
+},{"../private/eegeo_dom_util":5,"../private/elevation_mode.js":7,"../private/indoor_map_layer_options.js":39,"./popup":81}],79:[function(require,module,exports){
 var L = require("leaflet");
 var space = require("./space");
 
@@ -21377,16 +21645,16 @@ var Polygon = function(latLngs, config) {
     throw new Error("Incorrect array input format.");
   }
 
-	var _color = new space.Vector4(config["color"] || [0, 0, 255, 128]);
+	var _color = config["color"] || new space.Vector4(0, 0, 255, 128);
 	var _colorNeedsChanged = true;
 
 
 	this.getColor = function() {
-		return new space.Vector4(_color);
+		return _color;
 	};
 
 	this.setColor = function(color) {
-		_color = new space.Vector4(color);
+		_color = color;
 		_colorNeedsChanged = true;
     return this;
 	};
@@ -21442,7 +21710,7 @@ module.exports = {
 	Polygon: Polygon,
 	polygon: polygon
 };
-},{"./space":83,"leaflet":1}],79:[function(require,module,exports){
+},{"./space":84,"leaflet":1}],80:[function(require,module,exports){
 var L = require("leaflet");
 var elevationMode = require("../private/elevation_mode.js");
 
@@ -21482,7 +21750,7 @@ var Polyline = L.Polyline.extend({
     },
 
     getWidth: function() {
-        return this.options.weight || this.options.width;
+        return this.options.weight;
     },
 
     getColor: function() {
@@ -21554,7 +21822,7 @@ module.exports = {
     Polyline: Polyline,
     polyline: polyline
 };
-},{"../private/elevation_mode.js":7,"leaflet":1}],80:[function(require,module,exports){
+},{"../private/elevation_mode.js":7,"leaflet":1}],81:[function(require,module,exports){
 var Popup = L.Popup.extend({
     options: {
         elevation: 0,
@@ -21687,7 +21955,7 @@ module.exports = {
     popup: popup
 };
 
-},{}],81:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 var PrecacheOperationResult = function(succeeded) {
     var _succeeded = succeeded;
 
@@ -21698,7 +21966,7 @@ var PrecacheOperationResult = function(succeeded) {
 
 module.exports = PrecacheOperationResult;
 
-},{}],82:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 var elevationMode = require("../private/elevation_mode.js");
 
 var Prop = function (name, geometryId, location, config) {
@@ -21706,7 +21974,7 @@ var Prop = function (name, geometryId, location, config) {
     var _name = name;
     var _geometryId = geometryId;
     var _geometryIdNeedsChanged = false;
-    var _location = location;
+    var _location = L.latLng(location);
     var _locationNeedsChanged = false;    
     var _indoorMapId = config["indoorMapId"] || "";
     var _indoorMapFloorId = config["indoorMapFloorId"] || 0;
@@ -21722,8 +21990,9 @@ var Prop = function (name, geometryId, location, config) {
     };
 
     this.setLocation = function (location) {
-        _location = location;
+        _location = L.latLng(location);
         _locationNeedsChanged = true;
+        return this;
     };
 
     this.getIndoorMapId = function () {
@@ -21741,6 +22010,7 @@ var Prop = function (name, geometryId, location, config) {
     this.setHeadingDegrees = function (headingDegrees) {
         _headingDegrees = headingDegrees;
         _headingDegreesNeedsChanged = true;
+        return this;
     };
 
     this.getElevation = function () {
@@ -21750,6 +22020,7 @@ var Prop = function (name, geometryId, location, config) {
     this.setElevation = function (elevation) {
         _elevation = elevation;
         _elevationNeedsChanged = true;
+        return this;
     };
 
     this.getElevationMode = function () {
@@ -21761,6 +22032,7 @@ var Prop = function (name, geometryId, location, config) {
             _elevationMode = elevationModeString;
             _elevationModeNeedsChanged = true;
         }
+        return this;
     };
 
     this.getGeometryId = function () {
@@ -21770,6 +22042,7 @@ var Prop = function (name, geometryId, location, config) {
     this.setGeometryId = function (geometryId) {
         _geometryId = geometryId;
         _geometryIdNeedsChanged = true;
+        return this;
     };
 
     this.getName = function () {
@@ -21842,7 +22115,7 @@ module.exports = {
     Prop: Prop,
     prop: prop
 };
-},{"../private/elevation_mode.js":7}],83:[function(require,module,exports){
+},{"../private/elevation_mode.js":7}],84:[function(require,module,exports){
 var Vector3 = function(x, y, z) {
     if (typeof(x) === "number") {
         this.x = x;
@@ -21968,7 +22241,7 @@ var space = {
 };
 
 module.exports = space;
-},{}],84:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 var season = {
     Spring: "Spring",
     Summer: "Summer",
@@ -21998,7 +22271,7 @@ var themes = {
 };
 
 module.exports = themes;
-},{}],85:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 var L = require("leaflet");
 var EegeoMapController = require("./private/eegeo_map_controller");
 var EmscriptenApi = require("./private/emscripten_api/emscripten_api");
@@ -22015,7 +22288,7 @@ var heatmap = require("./public/heatmap.js");
 
 require("./private/polyfills.js");
 
-var _baseUrl = "https://cdn-webgl.wrld3d.com/eegeojs/public/latest/";
+var _baseUrl = "https://cdn-webgl.wrld3d.com/eegeojs/public/v2036/";
 var _appName = "eeGeoWebGL.jgz";
 
 
@@ -22036,9 +22309,7 @@ var createEmscriptenModule = function() {
   if (!_emscriptenStartedLoading) {
 		var script = document.createElement("script");
 		script.src = _baseUrl + _appName;
-		//script.src = "js/eeGeoWebGL.js";
-		//script.src = "https://cdn.jsdelivr.net/gh/darrynlowe/see5glib/eeGeoWebGL.js";
-    	script.onload = onEmscriptenLoaded;
+    script.onload = onEmscriptenLoaded;
 		document.body.appendChild(script);
 		_emscriptenStartedLoading = true;
   }
@@ -22142,9 +22413,9 @@ L.Wrld = Wrld;
 L.eeGeo = L.Wrld;
 
 // The default image path is broken when using Browserify - it searches the script tags on the page
-L.Icon.Default.imagePath = "http://cdn.leafletjs.com/leaflet/v1.0.1/images/";
+L.Icon.Default.imagePath = "https://unpkg.com/leaflet@1.0.1/dist/images/";
 
 module.exports = L.Wrld;
 
-},{"./private/eegeo_map_controller":6,"./private/emscripten_api/emscripten_api":8,"./private/polyfills.js":45,"./private/polygon_shim.js":47,"./private/polyline_shim.js":49,"./private/rectangle_shim.js":52,"./public/buildings/buildings":62,"./public/circle.js":63,"./public/heatmap.js":65,"./public/indoorMapEntities/indoorMapEntities":66,"./public/indoorMapFloorOutlines/indoorMapFloorOutlines":69,"./public/indoors/indoors":76,"./public/marker.js":77,"./public/polygon.js":78,"./public/polyline.js":79,"./public/popup.js":80,"./public/prop.js":82,"./public/space":83,"./public/themes":84,"leaflet":1}]},{},[85])(85)
+},{"./private/eegeo_map_controller":6,"./private/emscripten_api/emscripten_api":8,"./private/polyfills.js":45,"./private/polygon_shim.js":47,"./private/polyline_shim.js":49,"./private/rectangle_shim.js":52,"./public/buildings/buildings":62,"./public/circle.js":63,"./public/heatmap.js":66,"./public/indoorMapEntities/indoorMapEntities":67,"./public/indoorMapFloorOutlines/indoorMapFloorOutlines":70,"./public/indoors/indoors":77,"./public/marker.js":78,"./public/polygon.js":79,"./public/polyline.js":80,"./public/popup.js":81,"./public/prop.js":83,"./public/space":84,"./public/themes":85,"leaflet":1}]},{},[86])(86)
 });
